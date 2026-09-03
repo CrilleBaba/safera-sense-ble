@@ -4,7 +4,7 @@ Async Python library for talking to **Safera Sense** cooking sensors over
 Bluetooth Low Energy — as found in **Røros Hetta** cooker hoods
 (Safera Sense Integral) and Safera stove guards.
 
-[![CI](https://github.com/christophebaraer/safera-sense-ble/actions/workflows/ci.yml/badge.svg)](https://github.com/christophebaraer/safera-sense-ble/actions/workflows/ci.yml)
+[![CI](https://github.com/crillebaba/safera-sense-ble/actions/workflows/ci.yml/badge.svg)](https://github.com/crillebaba/safera-sense-ble/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/safera-sense-ble.svg)](https://pypi.org/project/safera-sense-ble/)
 
 ## Credits

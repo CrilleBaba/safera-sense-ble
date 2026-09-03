@@ -27,9 +27,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/christophebaraer/safera-sense-ble"
-Repository = "https://github.com/christophebaraer/safera-sense-ble"
-Issues = "https://github.com/christophebaraer/safera-sense-ble/issues"
+Homepage = "https://github.com/crillebaba/safera-sense-ble"
+Repository = "https://github.com/crillebaba/safera-sense-ble"
+Issues = "https://github.com/crillebaba/safera-sense-ble/issues"
 
 [dependency-groups]
 dev = [
