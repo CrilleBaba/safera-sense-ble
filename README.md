@@ -43,7 +43,7 @@ Unofficial project — not affiliated with Safera Oy or Røros Metall AS.
   ambient light, eCO2, tVOC, air quality index, PM2.5, stove power
   draw, cooking activity, alarm level, grease filter saturation,
   device state and error bitfields.
-- **Control**: hood fan speeds 1–3, boost, auto mode; light levels 1–3;
+- **Control**: hood fan speeds 1–4 (level 4 = boost), auto mode; light levels 1–3;
   identify; grease-filter reset.
 - **Device info**: model, serial, hardware/firmware revisions, Wi-Fi
   status (SSID, RSSI, device name).
@@ -120,13 +120,14 @@ asyncio.run(monitor("D4:6A:C8:XX:XX:XX"))
 ```python
 from safera_sense_ble import FanSpeed, LightLevel
 
-await client.set_fan_speed(FanSpeed.LEVEL_2)   # speeds 1-3
-await client.set_fan_speed(FanSpeed.BOOST)     # time-limited boost
+await client.set_fan_speed(FanSpeed.LEVEL_2)   # speeds 1-4
+await client.set_fan_speed(FanSpeed.BOOST)     # top step (level 4)
 await client.set_fan_auto()                    # air-quality controlled
 await client.set_fan_speed(FanSpeed.OFF)
 
-await client.set_light_level(LightLevel.LEVEL_3)
+await client.set_light_level(LightLevel.LEVEL_3)  # light levels 1-3
 await client.set_light_level(LightLevel.OFF)
+await client.toggle_light_auto()               # toggle presence-based auto
 
 await client.identify()                        # make the device identify itself
 await client.reset_grease_filter()             # after cleaning the filter
