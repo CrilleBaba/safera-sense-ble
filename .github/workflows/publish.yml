@@ -1,0 +1,21 @@
+name: Publish to PyPI
+
+# Publishes when a GitHub release is created. Uses PyPI "trusted
+# publishing": add this repo/workflow as a trusted publisher for the
+# safera-sense-ble project on pypi.org (no API token needed).
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@release/v1
