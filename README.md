@@ -9,20 +9,30 @@ Bluetooth Low Energy — as found in **Røros Hetta** cooker hoods
 
 ## Credits
 
-The idea and much of the protocol reverse engineering come from
-**Håvard Gulldahl**'s [rorossense-ble](https://github.com/havardgulldahl/rorossense-ble)
-project — in particular its excellent byte-level
-[protocol documentation](https://github.com/havardgulldahl/rorossense-ble/blob/main/docs/safera-ble-protocol.md).
-This library is an independent, from-scratch implementation of that
-protocol, extended with findings made during its development:
+Most of the protocol reverse engineering comes from two projects that
+did the heavy lifting:
 
-- the proprietary characteristics require **BLE bonding** (the device
+- **[magicus/safera-ble](https://github.com/magicus/safera-ble)** — the
+  byte-level protocol documentation, derived from packet captures and
+  analysis of the decompiled Android app;
+- **[havardgulldahl/rorossense-ble](https://github.com/havardgulldahl/rorossense-ble)** —
+  a working Python client and further protocol exploration against a
+  RørosHetta hood, including the
+  [consolidated protocol docs](https://github.com/havardgulldahl/rorossense-ble/blob/main/docs/safera-ble-protocol.md).
+
+This library is an independent, from-scratch implementation of that
+protocol, extended with findings made during its development (verified
+on an `IFU10CR-PRO`, firmware 13/75):
+
+- the proprietary characteristics require **BLE bonding** — the device
   answers ATT "Insufficient authentication" until paired; this library
-  pairs on demand and retries),
+  pairs on demand and retries;
 - **grease filter saturation** lives at byte 59 of the extended sensor
-  report, and resets via the `SET_HOOD_FILTER_CHANGED` command
-  (confirmed experimentally against the vendor app on an
-  `IFU10CR-PRO`, firmware 13/75).
+  report and resets via the `SET_HOOD_FILTER_CHANGED` command
+  (confirmed with a before/after diff around the vendor app's filter
+  reset);
+- the "particle index" field tracks the vendor app's **PM2.5** reading
+  (µg/m³, 0.2 µg/m³ raw resolution).
 
 Unofficial project — not affiliated with Safera Oy or Røros Metall AS.
 
@@ -30,13 +40,17 @@ Unofficial project — not affiliated with Safera Oy or Røros Metall AS.
 
 - **Live sensor stream**: subscribe to notifications (~1 Hz) parsed into a
   typed `SensorReport` — ambient/surface/pan temperature, humidity,
-  ambient light, eCO2, tVOC, air quality index, particle index, stove
-  power draw, cooking activity, alarm level, grease filter saturation,
-  device state, error bitfields.
+  ambient light, eCO2, tVOC, air quality index, PM2.5, stove power
+  draw, cooking activity, alarm level, grease filter saturation,
+  device state and error bitfields.
 - **Control**: hood fan speeds 1–3, boost, auto mode; light levels 1–3;
   identify; grease-filter reset.
 - **Device info**: model, serial, hardware/firmware revisions, Wi-Fi
   status (SSID, RSSI, device name).
+- **Sensible precision**: values are quantized to each sensor's
+  meaningful resolution (0.1 °C temperatures, whole-percent humidity,
+  whole lux, 0.1 µg/m³ PM2.5) so consumers don't see measurement
+  jitter as state changes.
 - Built on [bleak](https://github.com/hbldh/bleak) and
   [bleak-retry-connector](https://github.com/Bluetooth-Devices/bleak-retry-connector);
   plays well with Home Assistant's Bluetooth stack but has **no Home
@@ -87,8 +101,9 @@ async def monitor(address: str):
     def on_report(report: SensorReport) -> None:
         print(
             f"{report.ambient_temperature:.1f} °C  "
-            f"{report.humidity:.0f} %RH  "
+            f"{report.humidity} %RH  "
             f"eCO2 {report.co2_ppm} ppm  "
+            f"PM2.5 {report.particle_index} µg/m³  "
             f"filter {report.grease_filter} %"
         )
 
@@ -136,8 +151,9 @@ See [examples/monitor.py](examples/monitor.py) for a runnable script.
   hood-only fields (`fan_speed_raw`, `light_raw`, `grease_filter`, …)
   are `None` when absent.
 - `SaferaSenseClient.dump_characteristics()` hex-dumps every readable
-  characteristic — useful for decoding the remaining unknown fields;
-  contributions welcome upstream and here.
+  characteristic — useful for decoding the remaining unknown fields
+  (byte 58 of the sensor report, the event log, `READ_SETTINGS`, …);
+  contributions welcome here and upstream.
 
 ## License
 
