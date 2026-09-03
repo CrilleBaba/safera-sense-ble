@@ -201,12 +201,13 @@ class SaferaSenseClient:
             self._report_callback(report)
 
     def _log_report_tail(self, data: bytes) -> None:
-        """Debug-log the not-yet-decoded report bytes whenever they change.
+        """Debug-log the extended report bytes whenever they change.
 
-        Bytes 48-50 and 53+ of the sensor report are (mostly) unmapped;
-        this is where slow counters like grease filter saturation are
-        suspected to live. Bytes 51-52 (radio link metrics) jitter and
-        are excluded to avoid log spam.
+        Bytes 48-50 and 53+ carry the hood state; several fields here
+        are decoded (light step/brightness/colour-temp, fan speed,
+        grease filter, auto flags) but some remain unknown (e.g. byte
+        58), so this aids further reverse engineering. Bytes 51-52
+        (radio link metrics) jitter and are excluded to avoid log spam.
         """
         tail = data[48:51] + data[53:]
         if tail == self._last_tail:

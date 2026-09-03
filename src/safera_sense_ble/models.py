@@ -68,7 +68,7 @@ class SensorReport:
     #             bit 0x02 = light auto
     fan_speed_raw: int | None = None  # 0/30/60/90/120
     hood_flags: int | None = None
-    light_raw: int | None = None  # current brightness, 0/30/60/90
+    light_raw: int | None = None  # light step indicator, 0/30/60/90 (level * 30)
     # Grease filter saturation %; resets to 0 via SET_HOOD_FILTER_CHANGED.
     # (Byte 59 tracked the vendor app's filter percentage and zeroed on
     # reset.)
