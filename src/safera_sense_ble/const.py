@@ -1,6 +1,8 @@
 """Constants for the Safera Sense BLE protocol.
 
-Protocol knowledge reverse engineered by the rorossense-ble project:
+Protocol knowledge reverse engineered by the safera-ble and
+rorossense-ble projects:
+https://github.com/magicus/safera-ble
 https://github.com/havardgulldahl/rorossense-ble
 """
 

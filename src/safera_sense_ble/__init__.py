@@ -1,9 +1,10 @@
 """safera-sense-ble: BLE client library for Safera Sense cooking sensors.
 
-Protocol reverse engineering by Håvard Gulldahl
+Protocol reverse engineering by magicus
+(https://github.com/magicus/safera-ble) and Håvard Gulldahl
 (https://github.com/havardgulldahl/rorossense-ble); this library is an
 independent implementation with additional findings (BLE bonding
-requirement, grease filter saturation field).
+requirement, grease filter field, PM2.5 interpretation).
 """
 
 from .client import SaferaSenseClient

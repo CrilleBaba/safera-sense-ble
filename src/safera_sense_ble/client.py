@@ -3,7 +3,9 @@
 Uses bleak + bleak-retry-connector; contains no Home Assistant imports so
 it can also be exercised standalone.
 
-Command sequences are taken from the rorossense-ble reverse engineering:
+Command sequences are taken from the safera-ble and rorossense-ble
+reverse engineering projects:
+https://github.com/magicus/safera-ble
 https://github.com/havardgulldahl/rorossense-ble
 """
 
