@@ -61,7 +61,7 @@ def test_grease_filter_field() -> None:
 def test_bare_54_byte_report_has_no_hood_fields() -> None:
     report = SensorReport.from_bytes(REPORT_FILTER_6PCT[:54])
     assert report.grease_filter is None
-    assert report.fan_speed_raw is None
+    assert report.hood_flags is None
     assert report.fan_auto is None
     # Byte 53 is present in a 54-byte record.
     assert report.light_raw == 0
@@ -79,18 +79,38 @@ def test_particle_index_one_decimal() -> None:
     assert SensorReport.from_bytes(payload).particle_index == pytest.approx(11.2)
 
 
-def test_light_auto_mode() -> None:
+def test_auto_flags_byte_60() -> None:
+    """Byte 60 is HOOD_AUTO_MASTER_ENABLES: bit0=fan, bit1=light."""
     payload = bytearray(REPORT_FILTER_6PCT)
-    payload[53] = 100
+    payload[60] = 0x03  # both auto
+    report = SensorReport.from_bytes(payload)
+    assert report.fan_auto is True
+    assert report.light_auto is True
+    payload[60] = 0x01  # fan auto only (light manual)
+    report = SensorReport.from_bytes(payload)
+    assert report.fan_auto is True
+    assert report.light_auto is False
+    payload[60] = 0x02  # light auto only (fan manual)
+    report = SensorReport.from_bytes(payload)
+    assert report.fan_auto is False
+    assert report.light_auto is True
+
+
+def test_light_brightness_while_auto() -> None:
+    payload = bytearray(REPORT_FILTER_6PCT)
+    payload[60] = 0x03
+    payload[53] = 90
     report = SensorReport.from_bytes(payload)
     assert report.light_auto is True
-    assert report.light_level is None
+    assert report.light_level == 3
 
 
-def test_fan_boost_level() -> None:
+def test_fan_speed_from_byte_56() -> None:
+    """Byte 56 is the commanded fan step: 0/30/60/90/120 -> level 0-4."""
     payload = bytearray(REPORT_FILTER_6PCT)
-    payload[60] = 120
-    assert SensorReport.from_bytes(payload).fan_speed_level == 4
+    for raw, level in [(0, 0), (30, 1), (60, 2), (90, 3), (120, 4)]:
+        payload[56] = raw
+        assert SensorReport.from_bytes(payload).fan_speed_level == level
 
 
 def test_wifi_status() -> None:

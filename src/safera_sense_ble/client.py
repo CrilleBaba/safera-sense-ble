@@ -47,9 +47,6 @@ from .models import DeviceInfo, SensorReport, WifiStatus
 
 _LOGGER = logging.getLogger(__name__)
 
-# Delay between the two writes of the boost sequence.
-_BOOST_SEQUENCE_DELAY = 0.1
-
 
 class SaferaSenseClient:
     """Client for one Safera Sense device."""
@@ -239,17 +236,13 @@ class SaferaSenseClient:
         )
 
     async def set_fan_speed(self, level: FanSpeed) -> None:
-        """Set fan speed: OFF, levels 1-3 or BOOST."""
-        if level is FanSpeed.BOOST:
-            # Boost is a two-write sequence: raw speed 120, then the
-            # boost/keep-alive command with param 120, as captured from
-            # the vendor app.
-            await self.send_command(
-                DeviceCommand.SET_HOOD_MOTOR_SPEED_STEP, LEVEL_TO_RAW[4]
-            )
-            await asyncio.sleep(_BOOST_SEQUENCE_DELAY)
-            await self.send_command(DeviceCommand.BT_KEEP_ALIVE, LEVEL_TO_RAW[4])
-            return
+        """Set fan speed: OFF or levels 1-4.
+
+        The hood exposes four speed steps (HOOD_MOTOR_SPEED_COUNT = 4);
+        each level is a single SET_HOOD_MOTOR_SPEED_STEP write with a
+        raw step of level * 30 (0/30/60/90/120). "Boost" is simply the
+        top step, level 4.
+        """
         await self.send_command(
             DeviceCommand.SET_HOOD_MOTOR_SPEED_STEP, LEVEL_TO_RAW[int(level)]
         )
@@ -257,6 +250,16 @@ class SaferaSenseClient:
     async def set_fan_auto(self) -> None:
         """Put the fan in automatic (air-quality controlled) mode."""
         await self.send_command(DeviceCommand.SET_HOOD_MOTOR_AUTO_MODE, 0x02)
+
+    async def toggle_light_auto(self) -> None:
+        """Toggle the light's automatic (presence-based) mode.
+
+        Captured from the vendor app via DEVICE_COMMAND read-back: the
+        same command and parameter are sent to enter AND leave auto
+        mode, so callers should check SensorReport.light_auto first and
+        only toggle when the current state differs from the target.
+        """
+        await self.send_command(DeviceCommand.SET_HOOD_LIGHT_AUTO_MODE, 0x02)
 
     async def set_light_level(self, level: LightLevel) -> None:
         """Set the hood light to OFF or levels 1-3."""
@@ -281,6 +284,12 @@ class SaferaSenseClient:
         saturation). Returns {name: "aa:bb:..."} with errors inline.
         """
         targets = {
+            # Read FIRST: DEVICE_COMMAND returns the LAST command the
+            # device received (e.g. from the vendor app) — invaluable for
+            # capturing unknown command parameters. It must be read
+            # before this dump's own CONFIG_READ_BANK write below, which
+            # would overwrite it.
+            "DEVICE_COMMAND (babe)": CHAR_DEVICE_COMMAND,
             "SENSOR_REPORT (beef)": CHAR_SENSOR_REPORT,
             "READ_SETTINGS (dcba)": CHAR_READ_SETTINGS,
             "DAY_STATISTICS (abdf)": CHAR_DAY_STATISTICS,

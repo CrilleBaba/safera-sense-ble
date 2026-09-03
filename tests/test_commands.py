@@ -47,12 +47,10 @@ async def test_fan_levels(client: SaferaSenseClient) -> None:
     ]
 
 
-async def test_fan_boost_sequence(client: SaferaSenseClient) -> None:
+async def test_fan_level_4_is_a_single_step(client: SaferaSenseClient) -> None:
+    # "Boost" is just the top speed step (level 4 = raw 120).
     await client.set_fan_speed(FanSpeed.BOOST)
-    assert written_payloads(client) == [
-        bytes([0x01, 0x20, 0, 0, 0x78, 0, 0, 0]),
-        bytes([0x02, 0x10, 0, 0, 0x78, 0, 0, 0]),
-    ]
+    assert written_payloads(client) == [bytes([0x01, 0x20, 0, 0, 0x78, 0, 0, 0])]
 
 
 async def test_fan_auto(client: SaferaSenseClient) -> None:

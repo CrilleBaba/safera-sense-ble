@@ -60,34 +60,53 @@ class SensorReport:
     activity_level: int  # %
     power_consumption: int  # W, stove power draw
     # Hood state; only present when the sensor is integrated with a hood
-    # and the device sends an extended (>54 byte) report.
+    # and the device sends an extended (>54 byte) report. Offsets
+    # confirmed empirically on IFU10CR-PRO fw 13/75:
+    #   byte 56 = commanded fan speed step (0/30/60/90/120)
+    #   byte 60 = auto flags bitfield, matching magicus's
+    #             HOOD_AUTO_MASTER_ENABLES: bit 0x01 = fan auto,
+    #             bit 0x02 = light auto
     fan_speed_raw: int | None = None  # 0/30/60/90/120
-    fan_auto: bool | None = None
-    light_raw: int | None = None  # 0/30/60/90, 100 = auto
+    hood_flags: int | None = None
+    light_raw: int | None = None  # current brightness, 0/30/60/90
     # Grease filter saturation %; resets to 0 via SET_HOOD_FILTER_CHANGED.
-    # (Offset confirmed empirically on IFU10CR-PRO fw 13/75: byte 59
-    # tracked the vendor app's filter percentage and zeroed on reset.)
+    # (Byte 59 tracked the vendor app's filter percentage and zeroed on
+    # reset.)
     grease_filter: int | None = None
 
     @property
     def fan_speed_level(self) -> int | None:
-        """Fan level 0-4, if known."""
-        if self.fan_speed_raw is None:
+        """Fan level 0-4, if known (0 = off, 4 = boost)."""
+        if self.fan_speed_raw is None or self.fan_speed_raw not in (
+            0,
+            30,
+            60,
+            90,
+            120,
+        ):
             return None
-        return min(4, round(self.fan_speed_raw / 30))
+        return self.fan_speed_raw // 30
+
+    @property
+    def fan_auto(self) -> bool | None:
+        """True when the fan is in automatic (air-quality) mode."""
+        if self.hood_flags is None:
+            return None
+        return bool(self.hood_flags & 0x01)
 
     @property
     def light_auto(self) -> bool | None:
-        if self.light_raw is None:
+        """True when the light is in automatic (presence-based) mode."""
+        if self.hood_flags is None:
             return None
-        return self.light_raw == 100
+        return bool(self.hood_flags & 0x02)
 
     @property
     def light_level(self) -> int | None:
-        """Light level 0-3, if known (None while in auto mode)."""
-        if self.light_raw is None or self.light_raw == 100:
+        """Current light level 0-3, if known."""
+        if self.light_raw is None or self.light_raw not in (0, 30, 60, 90):
             return None
-        return min(3, round(self.light_raw / 30))
+        return round(self.light_raw / 30)
 
     @property
     def sensor_error_messages(self) -> list[str]:
@@ -133,8 +152,8 @@ class SensorReport:
             alarm_level=payload[44],
             activity_level=payload[45],
             power_consumption=_u16(payload, 46),
-            fan_speed_raw=payload[60] if len(payload) > 60 else None,
-            fan_auto=(payload[63] == 30) if len(payload) > 63 else None,
+            fan_speed_raw=payload[56] if len(payload) > 56 else None,
+            hood_flags=payload[60] if len(payload) > 60 else None,
             light_raw=payload[53] if len(payload) > 53 else None,
             grease_filter=payload[59] if len(payload) > 59 else None,
         )
