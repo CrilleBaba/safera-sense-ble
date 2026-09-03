@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "safera-sense-ble"
-version = "0.2.0"
+version = "0.1.0"
 description = "BLE client library for Safera Sense cooking sensors (Røros Hetta cooker hoods, Safera stove guards)"
 readme = "README.md"
 license = "MIT"
