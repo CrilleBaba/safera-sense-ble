@@ -45,6 +45,7 @@ class DeviceCommand(IntEnum):
     """
 
     BT_KEEP_ALIVE = 0x1002
+    CLEAR_SMART_COOKING_EVENT_LIST = 0x1004
     SET_CLOCK_UNIX = 0x1005
     IDENTIFY_DEVICE = 0x1018
     CONFIG_READ_BANK = 0x101B
@@ -57,6 +58,33 @@ class DeviceCommand(IntEnum):
     SET_HOOD_LIGHT_TEMPERATURE = 0x2007
     SET_HOOD_LIGHT_AUTO_MODE = 0x2008
     SET_HOOD_FILTER_CHANGED = 0x2009
+
+
+class CookingEventType(IntEnum):
+    """EVENT_LOG ("abcf") event type codes (the app's Smart Cooking timeline).
+
+    event_type is an 8-bit signed value, so some codes are negative.
+    """
+
+    COOKING_START = 1
+    HEATING_START = 2
+    FRYING_START = 3
+    BOILING_START = 4
+    GENERAL_ACTION = 5
+    STEAK_IN = 6
+    INVESTIGATING = 99
+    OK_BUTTON_PRESSED = 100
+    AUX1_BUTTON_PRESSED = 101
+    AUX2_BUTTON_PRESSED = 102
+    MIU_STOVE_ALARM = 103
+    MIU_STOVE_CUTOFF = 104
+    MIU_EXTINGUISH_ALARM = 105
+    MIU_EXTINGUISH_DONE = 106
+    ALARM_RESUMED = 107
+    CURRENT_FLOW_START = -56
+    TEMPERATURE_RISE_START = -55
+    CLOSED_ROUTINE = -2
+    ROUTINE = -1
 
 
 class DeviceState(IntEnum):

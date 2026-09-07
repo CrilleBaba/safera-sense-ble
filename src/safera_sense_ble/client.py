@@ -43,7 +43,13 @@ from .const import (
     FanSpeed,
     LightLevel,
 )
-from .models import DeviceInfo, SensorReport, WifiStatus
+from .models import (
+    CookingEvent,
+    DeviceInfo,
+    SensorReport,
+    WifiStatus,
+    parse_event_log,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +61,7 @@ class SaferaSenseClient:
         self._ble_device = ble_device
         self._client: BleakClient | None = None
         self._report_callback: Callable[[SensorReport], None] | None = None
+        self._event_log_callback: Callable[[list[CookingEvent]], None] | None = None
         self._lock = asyncio.Lock()
         self._last_tail: bytes | None = None
         self._first_report_logged = False
@@ -168,6 +175,11 @@ class SaferaSenseClient:
         )
         return SensorReport.from_bytes(raw)
 
+    async def fetch_event_log(self) -> list[CookingEvent]:
+        """Read the current Smart Cooking timeline (EVENT_LOG)."""
+        raw = await self._authed(self._ensure_client().read_gatt_char, CHAR_EVENT_LOG)
+        return parse_event_log(raw)
+
     # -- Notifications ---------------------------------------------------
 
     async def subscribe_sensor_reports(
@@ -180,6 +192,23 @@ class SaferaSenseClient:
             CHAR_SENSOR_REPORT,
             self._notification_handler,
         )
+
+    async def subscribe_event_log(
+        self, callback: Callable[[list[CookingEvent]], None]
+    ) -> None:
+        """Subscribe to EVENT_LOG notifications (new Smart Cooking events)."""
+        self._event_log_callback = callback
+        await self._authed(
+            self._ensure_client().start_notify,
+            CHAR_EVENT_LOG,
+            self._event_log_notification_handler,
+        )
+
+    def _event_log_notification_handler(
+        self, _characteristic: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
+        if self._event_log_callback is not None:
+            self._event_log_callback(parse_event_log(data))
 
     def _notification_handler(
         self, _characteristic: BleakGATTCharacteristic, data: bytearray
@@ -275,6 +304,10 @@ class SaferaSenseClient:
     async def reset_grease_filter(self) -> None:
         """Tell the device the grease filter was cleaned/replaced."""
         await self.send_command(DeviceCommand.SET_HOOD_FILTER_CHANGED, 0)
+
+    async def clear_event_log(self) -> None:
+        """Clear the Smart Cooking timeline (the app's "Clear Timeline")."""
+        await self.send_command(DeviceCommand.CLEAR_SMART_COOKING_EVENT_LIST, 0)
 
     # -- Protocol investigation ------------------------------------------
 

@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .const import PCU_ERROR_FLAGS, SENSOR_ERROR_FLAGS
+from .const import PCU_ERROR_FLAGS, SENSOR_ERROR_FLAGS, CookingEventType
 
 SENSOR_REPORT_MIN_LEN = 54
+_EVENT_ENTRY_LEN = 5
 
 
 def _u16(payload: bytes, offset: int) -> int:
@@ -157,6 +158,44 @@ class SensorReport:
             light_raw=payload[53] if len(payload) > 53 else None,
             grease_filter=payload[59] if len(payload) > 59 else None,
         )
+
+
+@dataclass(frozen=True)
+class CookingEvent:
+    """One EVENT_LOG entry (a Smart Cooking timeline item)."""
+
+    event_type: int  # CookingEventType value (8-bit signed)
+    timestamp: int  # device clock seconds; correlate via SensorReport.device_clock
+
+    @property
+    def name(self) -> str:
+        """Lower-case event name, or 'event_<n>' for unknown codes."""
+        try:
+            return CookingEventType(self.event_type).name.lower()
+        except ValueError:
+            return f"event_{self.event_type}"
+
+
+def parse_event_log(payload: bytes | bytearray) -> list[CookingEvent]:
+    """Parse the EVENT_LOG ("abcf") record into a list of events.
+
+    Layout: a 16-bit little-endian count, then that many 5-byte entries
+    of (1-byte signed type, 4-byte little-endian device-clock timestamp).
+    Order is newest-first, as shown in the app's timeline.
+    """
+    payload = bytes(payload)
+    if len(payload) < 2:
+        return []
+    count = int.from_bytes(payload[0:2], "little")
+    events: list[CookingEvent] = []
+    for i in range(count):
+        off = 2 + i * _EVENT_ENTRY_LEN
+        if off + _EVENT_ENTRY_LEN > len(payload):
+            break
+        event_type = int.from_bytes(payload[off : off + 1], "little", signed=True)
+        timestamp = int.from_bytes(payload[off + 1 : off + 5], "little")
+        events.append(CookingEvent(event_type=event_type, timestamp=timestamp))
+    return events
 
 
 @dataclass(frozen=True)

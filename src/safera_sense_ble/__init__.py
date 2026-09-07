@@ -12,19 +12,28 @@ from .const import (
     ALARM_DEVICE_STATES,
     SAFERA_SERVICE_UUID,
     ActivityType,
+    CookingEventType,
     DeviceCommand,
     DeviceState,
     FanSpeed,
     LightLevel,
 )
-from .models import DeviceInfo, SensorReport, WifiStatus
+from .models import (
+    CookingEvent,
+    DeviceInfo,
+    SensorReport,
+    WifiStatus,
+    parse_event_log,
+)
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "ALARM_DEVICE_STATES",
     "SAFERA_SERVICE_UUID",
     "ActivityType",
+    "CookingEvent",
+    "CookingEventType",
     "DeviceCommand",
     "DeviceInfo",
     "DeviceState",
@@ -34,4 +43,5 @@ __all__ = [
     "SensorReport",
     "WifiStatus",
     "__version__",
+    "parse_event_log",
 ]

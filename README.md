@@ -45,6 +45,9 @@ Unofficial project — not affiliated with Safera Oy or Røros Metall AS.
   device state and error bitfields.
 - **Control**: hood fan speeds 1–4 (level 4 = boost), auto mode; light levels 1–3;
   identify; grease-filter reset.
+- **Smart Cooking event log**: read or subscribe to the timeline of
+  cooking events (cooking/frying/boiling/heating started, stove alarms,
+  button presses); clear it too.
 - **Device info**: model, serial, hardware/firmware revisions, Wi-Fi
   status (SSID, RSSI, device name).
 - **Sensible precision**: values are quantized to each sensor's
@@ -139,6 +142,26 @@ await client.reset_grease_filter()             # after cleaning the filter
 report = await client.fetch_sensor_report()    # single parsed snapshot
 wifi = await client.fetch_wifi_status()        # SSID, RSSI, device name, IP
 ```
+
+### Smart Cooking event log
+
+```python
+from safera_sense_ble import CookingEvent
+
+events = await client.fetch_event_log()        # current timeline (newest first)
+for e in events:
+    print(e.name, e.timestamp)                 # e.g. "frying_start", device clock
+
+def on_events(events: list[CookingEvent]) -> None:
+    if events:
+        print("latest:", events[0].name)
+
+await client.subscribe_event_log(on_events)    # notified on new events
+await client.clear_event_log()                 # the app's "Clear Timeline"
+```
+
+Event timestamps are in device-clock seconds; correlate them with the
+live `SensorReport.device_clock` if you need wall-clock times.
 
 See [examples/monitor.py](examples/monitor.py) for a runnable script.
 
